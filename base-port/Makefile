@@ -18,7 +18,7 @@ INC_PATH += -I$(BASE_PORT)/base/include
 INC_PATH += -I$(BASE_PORT)/tool/include
 
 # FLAGS and LIBS
-CFLAGS    += -O3 -Wall -Werror $(INC_PATH) -Wno-main -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector -MMD
+CFLAGS    += -Os -Wall -Werror $(INC_PATH) -Wno-main -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector -MMD
 AFLAGS 	  += -MMD $(INC_PATH) 
 LDFLAGS   += -T $(BASE_PORT)/script/linker.ld --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0 
 LIBS 	  += $(BASE_PORT)/base/build/libbase.a $(BASE_PORT)/tool/build/libtool.a
