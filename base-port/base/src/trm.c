@@ -9,6 +9,7 @@ static const int argc = sizeof(argv) / sizeof(argv[0]);
 
 extern char _heap_start;
 extern char _pmem_start;
+extern volatile uint32_t tohost;
 
 #define PMEM_SIZE (128 * 1024 * 1024)
 #define PMEM_END  ((uintptr_t)&_pmem_start + PMEM_SIZE)
@@ -21,7 +22,9 @@ void putch(char ch) {
     outb(SERIAL_PORT, ch);
 }
 void halt(int code) {
-  asm volatile(".word 0x80000000" : :"r"(code));
+  // The simulator resolves the ELF symbol and observes this architectural
+  // store.  1 means pass; any other odd value carries a non-zero exit code.
+  tohost = code == 0 ? 1u : (((uint32_t)code << 1) | 1u);
   while(1);
 }
 

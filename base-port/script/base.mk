@@ -1,19 +1,26 @@
 
 # make ar
-CROSS_COMPILE := 
-AR = $(CROSS_COMPILE)llvm-ar
-CC = $(CROSS_COMPILE)clang
-AS = $(CROSS_COMPILE)clang
+LLVM_CONFIG ?= llvm-config
+LLVM_BIN    ?= $(shell $(LLVM_CONFIG) --bindir 2>/dev/null)
+ifeq ($(LLVM_BIN),)
+  $(error llvm-config was not found; install the LLVM version pinned by Zircon-2026)
+endif
+AR = $(LLVM_BIN)/llvm-ar
+CC = $(LLVM_BIN)/clang
+AS = $(LLVM_BIN)/clang
 
-COMMON_FLAGS = -march=rv32im_zicsr_zifencei -mabi=ilp32 -Os --target=riscv32 -g
+RISCV_ARCH ?= rv32imaf_zicsr_zifencei
+RISCV_ABI  ?= ilp32f
+COMMON_FLAGS = -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI) -Os --target=riscv32 -g
 
 CFLAGS = -MMD $(COMMON_FLAGS) $(INC_PATH)
 CFLAGS += -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector 
 AFLAGS = $(COMMON_FLAGS)
 ARFLAGS = rcs
 
-BUILD_DIR = $(abspath ./build)
-TAR_DIR = $(BUILD_DIR)/riscv32
+CONFIG_TAG = $(RISCV_ARCH)-$(RISCV_ABI)
+BUILD_DIR = $(abspath ./build)/$(CONFIG_TAG)
+TAR_DIR = $(BUILD_DIR)/obj
 OBJS = $(addprefix $(TAR_DIR)/, $(addsuffix .o, $(basename $(KER_SRCS))))
 LIBKER = $(BUILD_DIR)/lib$(LIBNAME).a
 

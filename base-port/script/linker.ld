@@ -15,6 +15,12 @@ SECTIONS {
   .data : {
     *(.data)
   }
+  .tohost : ALIGN(64) {
+    tohost = .;
+    LONG(0);
+    fromhost = .;
+    LONG(0);
+  }
   edata = .;
   _data = .;
   .bss : {
