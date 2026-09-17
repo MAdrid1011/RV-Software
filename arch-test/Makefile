@@ -1,22 +1,55 @@
 ARCH_TEST_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 RV_SOFTWARE_DIR := $(abspath $(ARCH_TEST_DIR)/..)
 ZIRCON_ROOT ?= $(abspath $(RV_SOFTWARE_DIR)/..)
-UPSTREAM := $(RV_SOFTWARE_DIR)/third_party/riscv-arch-test
-CONFIG := $(ARCH_TEST_DIR)/config/test_config.yaml
-WORK := $(ARCH_TEST_DIR)/build
+
+BUILD_DIR := $(ARCH_TEST_DIR)/build
+ELF_DIR := $(BUILD_DIR)/elf
+TEST_DIR := $(ARCH_TEST_DIR)/tests
 SIM ?= $(ZIRCON_ROOT)/build/cmake/bin/zircon-sim
-TOOLCHAIN_BIN ?= $(shell brew --prefix llvm 2>/dev/null | sed 's|$$|/bin|')
-ARCH_TEST_TOOLS := $(ARCH_TEST_DIR)/toolchain
-ELF_DIR := $(WORK)/zircon-rv32im-zicsr-clang/elfs/rv32i/Zicsr
-TESTS := csrrw csrrs csrrc csrrwi csrrsi csrrci
-ELFS := $(addprefix $(ELF_DIR)/Zicsr-,$(addsuffix -00.elf,$(TESTS)))
+CLANG ?= $(shell brew --prefix llvm 2>/dev/null)/bin/clang
+OBJDUMP ?= $(shell brew --prefix llvm 2>/dev/null)/bin/llvm-objdump
+JOBS ?= $(shell sysctl -n hw.logicalcpu 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 
-.PHONY: build run-smoke run clean
+ISA := rv32imaf_zicsr_zifencei_zaamo_zalrsc_zicntr_zihpm
+ABI := ilp32f
+COMMON_FLAGS := --target=riscv32 -fuse-ld=lld -march=$(ISA) -mabi=$(ABI) \
+    -O0 -g -mcmodel=medany -nostdlib -Wl,--no-relax \
+    -T $(ARCH_TEST_DIR)/config/link.ld -I $(ARCH_TEST_DIR)/env \
+    -DXLEN=32 -DTEST_FLEN=32
+SIM_FLAGS ?= --seed 1 --max-cycles 10000000 --stall-cycles 10000 --no-progress
 
-build: ; cd $(UPSTREAM) && PATH="$(ARCH_TEST_TOOLS):$(TOOLCHAIN_BIN):$$PATH"; export PATH; mise exec -- uv run act $(CONFIG) --workdir $(WORK) --extensions Zicsr --jobs 0
+SOURCES := $(shell find $(TEST_DIR) -type f -name '*.S' | sort)
+TEST_NAMES := $(basename $(notdir $(SOURCES)))
+TEST_DIRS := $(sort $(dir $(SOURCES)))
+ELFS := $(addprefix $(ELF_DIR)/,$(addsuffix .elf,$(TEST_NAMES)))
 
-run-smoke: build ; $(SIM) --elf $(ELF_DIR)/Zicsr-csrrw-00.elf --seed 1 --max-cycles 1000000 --stall-cycles 10000
+vpath %.S $(TEST_DIRS)
 
-run: build ; @for elf in $(ELFS); do $(SIM) --elf $$elf --seed 1 --max-cycles 1000000 --stall-cycles 10000 --no-progress || exit $$?; done
+.PHONY: build build-all list run run-one clean
 
-clean: ; $(RM) -r $(WORK)
+build:
+	+$(MAKE) -j$(JOBS) build-all
+
+build-all: $(ELFS)
+
+list:
+	@printf '%s\n' $(TEST_NAMES)
+
+$(ELF_DIR)/%.elf: %.S $(ARCH_TEST_DIR)/config/link.ld $(wildcard $(ARCH_TEST_DIR)/env/*.h)
+	@mkdir -p $(@D)
+	$(CLANG) $(COMMON_FLAGS) -DTEST_FILE=\"$*\" $< -o $@
+	$(OBJDUMP) -d $@ > $@.objdump
+
+run: build
+	@set -e; for elf in $(ELFS); do \
+	    printf '\n[%s]\n' "$$(basename "$$elf" .elf)"; \
+	    $(SIM) --elf "$$elf" $(SIM_FLAGS); \
+	done
+
+run-one:
+	@test -n "$(TEST)" || { echo 'usage: make run-one TEST=I-add-00'; exit 2; }
+	+$(MAKE) $(ELF_DIR)/$(TEST).elf
+	$(SIM) --elf $(ELF_DIR)/$(TEST).elf $(SIM_FLAGS)
+
+clean:
+	cmake -E rm -rf $(BUILD_DIR)

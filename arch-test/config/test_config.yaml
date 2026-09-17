@@ -1,8 +1,0 @@
-name: zircon-rv32im-zicsr-clang
-compiler_exe: clang
-objdump_exe: llvm-objdump
-ref_model_exe: zircon-spike
-udb_config: zircon-rv32im-zicsr.yaml
-linker_script: link.ld
-dut_include_dir: .
-include_priv_tests: false
