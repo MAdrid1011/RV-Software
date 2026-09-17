@@ -37,7 +37,7 @@ LINKAGE   = $(OBJS) $(LIBS)
 # Build directory and OBJS
 BUILD_DIR = $(abspath ./build)
 IMAGE ?= $(BUILD_DIR)/$(NAMES)-$(CONFIG_TAG)
-TAR_DIR = $(BUILD_DIR)/$(CONFIG_TAG)
+TAR_DIR ?= $(BUILD_DIR)/$(CONFIG_TAG)
 OBJS = $(addprefix $(TAR_DIR)/, $(addsuffix .o, $(basename $(SRCS))))
 
 # Colors
