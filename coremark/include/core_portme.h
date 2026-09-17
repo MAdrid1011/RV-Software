@@ -9,7 +9,7 @@
 #include <base.h>
 #include <tool.h>
 
-#define ITERATIONS 30
+#define ITERATIONS 1
 #define MEM_METHOD MEM_STATIC
 
 /************************/
