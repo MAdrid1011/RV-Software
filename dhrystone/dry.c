@@ -360,7 +360,7 @@
 // #define Start_Timer() Begin_Time = uptime_ms()
 // #define Stop_Timer()  End_Time   = uptime_ms()
 
-#define NUMBER_OF_RUNS		10 /* Default number of runs */
+#define NUMBER_OF_RUNS		1000 /* Default number of runs */
 #define PASS2
 
 #ifdef  NOSTRUCTASSIGN
@@ -937,5 +937,3 @@ int main ()
 
   return 0;
 }
-
-
