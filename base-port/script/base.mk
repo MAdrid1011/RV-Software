@@ -11,7 +11,7 @@ AS = $(LLVM_BIN)/clang
 
 RISCV_ARCH ?= rv32imaf_zicsr_zifencei
 RISCV_ABI  ?= ilp32f
-COMMON_FLAGS = -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI) -Os --target=riscv32 -g
+COMMON_FLAGS = -march=$(RISCV_ARCH) -mabi=$(RISCV_ABI) -O2 --target=riscv32 -g
 
 CFLAGS = -MMD $(COMMON_FLAGS) $(INC_PATH)
 CFLAGS += -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector 
