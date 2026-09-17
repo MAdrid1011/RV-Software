@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "${1#--isa=}" != "$1" ]; then
+    shift
+fi
+
+exec spike --isa=RV32IM_Zicsr_Zifencei "$@"
