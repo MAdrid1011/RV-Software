@@ -69,7 +69,7 @@ typedef uint32_t CORE_TICKS;
 #endif
 #endif
 #ifndef COMPILER_FLAGS
-#define COMPILER_FLAGS "-Os -static -march=rv32imaf_zicsr_zifencei -mabi=ilp32f"
+#define COMPILER_FLAGS "-O2 -static -march=rv32imaf_zicsr_zifencei -mabi=ilp32f"
 #endif
 #ifndef MEM_LOCATION
 #define MEM_LOCATION "Code and data in simulated RAM; L1 cache at core clock"
