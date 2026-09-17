@@ -9,8 +9,11 @@
 #include <base.h>
 #include <tool.h>
 
+#ifndef ITERATIONS
 #define ITERATIONS 1
+#endif
 #define MEM_METHOD MEM_STATIC
+#define COREMARK_CYCLE_TIMER 1
 
 /************************/
 /* Data types and settings */
@@ -57,17 +60,19 @@ typedef uint32_t CORE_TICKS;
 	Initialize these strings per platform
 */
 #ifndef COMPILER_VERSION
- #ifdef __GNUC__
- #define COMPILER_VERSION "GCC"__VERSION__
- #else
- #define COMPILER_VERSION "Please put compiler version here (e.g. gcc 4.1)"
- #endif
+#ifdef __clang__
+#define COMPILER_VERSION "Clang " __clang_version__
+#elif defined(__GNUC__)
+#define COMPILER_VERSION "GCC " __VERSION__
+#else
+#define COMPILER_VERSION "Unknown compiler"
+#endif
 #endif
 #ifndef COMPILER_FLAGS
- #define COMPILER_FLAGS
+#define COMPILER_FLAGS "-Os -static -march=rv32imaf_zicsr_zifencei -mabi=ilp32f"
 #endif
 #ifndef MEM_LOCATION
- #define MEM_LOCATION "STACK"
+#define MEM_LOCATION "Code and data in simulated RAM; L1 cache at core clock"
 #endif
 
 /* Data Types :
@@ -84,6 +89,8 @@ typedef unsigned char ee_u8;
 typedef unsigned int ee_u32;
 typedef unsigned long ee_ptr_int;
 typedef size_t ee_size_t;
+
+ee_u32 coremark_score_milli(CORE_TICKS cycles, ee_u32 iterations);
 /* align_mem :
 	This macro is used to align an offset to point to a 32b value. It is used in the Matrix algorithm to initialize the input memory blocks.
 */
