@@ -20,7 +20,7 @@ PROVIDE(__num_harts = NUM_HARTS);
 SECTIONS
 {
     .text.init TEST_BASE : { *(.text.init) } > ram
-    .text.rvtest . : { *(.text.rvtest) *(.text.rvtest.*) } > ram
+    .text.rvtest ALIGN(64) : { *(.text.rvtest) *(.text.rvtest.*) } > ram
 
     . = ALIGN(0x4000);
     .rodata . : { *(.rodata) *(.rodata.*) *(.srodata) *(.srodata.*) } > ram
