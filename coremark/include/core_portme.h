@@ -10,7 +10,7 @@
 #include <tool.h>
 
 #ifndef ITERATIONS
-#define ITERATIONS 1
+#define ITERATIONS 30
 #endif
 #define MEM_METHOD MEM_STATIC
 #define COREMARK_CYCLE_TIMER 1
