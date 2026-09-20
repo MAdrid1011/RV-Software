@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+echo "Zircon Linux userspace validation"
+if /usr/bin/zircon-validation; then
+    echo "ZIRCON_LINUX_BOOT_PASS"
+else
+    status=$?
+    echo "ZIRCON_LINUX_BOOT_FAIL:$status"
+fi
+
+echo "Starting BusyBox shell on hvc0"
+exec /bin/sh </dev/hvc0 >/dev/hvc0 2>&1
