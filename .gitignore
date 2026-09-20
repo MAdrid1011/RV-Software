@@ -2,3 +2,5 @@ build/
 .result
 *.elf
 arch-test/reports/
+__pycache__/
+*.pyc
