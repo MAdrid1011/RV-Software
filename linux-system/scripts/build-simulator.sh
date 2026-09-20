@@ -7,10 +7,11 @@ sim_build=${SIM_BUILD:-$root/build/linux-sim}
 pgo_build=${PGO_BUILD:-$root/build/linux-pgo-generate}
 pgo_profile=${PGO_PROFILE:-$pgo_build/zircon-linux.profdata}
 pgo_fingerprint=${PGO_FINGERPRINT:-$pgo_build/zircon-linux.fingerprint}
+pgo_pending_fingerprint=${PGO_PENDING_FINGERPRINT:-$pgo_build/zircon-linux.pending-fingerprint}
 payload=${LINUX_PAYLOAD:-$system_dir/build/fw_payload.elf}
 jobs=${SIM_JOBS:-4}
 threads=${SIM_THREADS:-5}
-training_cycles=${PGO_TRAINING_CYCLES:-40000000}
+training_cycles=${PGO_TRAINING_CYCLES:-20000000}
 training_log=${PGO_TRAINING_LOG:-$system_dir/build/pgo-training.log}
 
 if [[ ! -f $payload ]]; then
@@ -88,6 +89,31 @@ if [[ -f $pgo_profile && -f $pgo_fingerprint ]] &&
     profile_is_current=true
 fi
 
+collect_raw_profiles() {
+    raw_profiles=()
+    while IFS= read -r -d '' profile; do
+        raw_profiles+=("$profile")
+    done < <(find "$pgo_build" -name '*.profraw' -type f -size +0c -print0 2>/dev/null)
+}
+
+training_completed() {
+    [[ -f $training_log ]] &&
+        grep -Eq '"status":"timeout","cycles":'"$training_cycles"',' "$training_log"
+}
+
+merge_raw_profiles() {
+    collect_raw_profiles
+    if [[ ${#raw_profiles[@]} -eq 0 ]]; then
+        echo "PGO training did not produce a non-empty raw profile" >&2
+        return 1
+    fi
+    mkdir -p "$(dirname "$pgo_profile")"
+    "$llvm_profdata" merge -output="$pgo_profile.tmp" "${raw_profiles[@]}"
+    mv "$pgo_profile.tmp" "$pgo_profile"
+    printf '%s\n' "$fingerprint" >"$pgo_fingerprint"
+    rm -f "$pgo_pending_fingerprint"
+}
+
 common_flags=(
     -DCMAKE_CXX_COMPILER="$cxx"
     -DCMAKE_BUILD_TYPE=Release
@@ -100,47 +126,64 @@ common_flags=(
 
 if [[ $profile_is_current != true ]]; then
     llvm_profdata=$(find_llvm_profdata)
-    rm -rf "$pgo_build" "$sim_build"
-    printf '\n============================================================\n'
-    printf ' PGO PROFILE TRAINING START\n'
-    printf ' Running %s Linux cycles for profile collection.\n' "$training_cycles"
-    printf ' This is training, not the interactive Linux session.\n'
-    printf '============================================================\n\n'
-    cmake -S "$root" -B "$pgo_build" \
-        "${common_flags[@]}" \
-        -DZIRCON_SIM_PGO_MODE=GENERATE
-    cmake --build "$pgo_build" --target zircon-sim --parallel "$jobs"
-
-    mkdir -p "$(dirname "$training_log")"
-    set +e
-    LLVM_PROFILE_FILE="$pgo_build/zircon-%p.profraw" \
-        "$pgo_build/bin/zircon-sim" \
-        --elf "$payload" \
-        --platform linux \
-        --max-cycles "$training_cycles" \
-        --stall-cycles 5000000 \
-        --allow-timeout \
-        --no-progress \
-        --no-color 2>&1 | tee "$training_log"
-    training_status=${PIPESTATUS[0]}
-    set -e
-    if [[ $training_status -ne 0 ]]; then
-        echo "PGO training failed with status $training_status" >&2
-        exit "$training_status"
+    collect_raw_profiles
+    pending_build_is_current=false
+    if [[ -f $pgo_pending_fingerprint ]] &&
+        [[ $(<"$pgo_pending_fingerprint") == "$fingerprint" ]] &&
+        [[ -x $pgo_build/bin/zircon-sim ]]; then
+        pending_build_is_current=true
     fi
+    if [[ $pending_build_is_current == true ]] &&
+        [[ ${#raw_profiles[@]} -gt 0 ]] && training_completed; then
+        printf '\n============================================================\n'
+        printf ' PGO PROFILE RECOVERY\n'
+        printf ' Reusing a completed %s-cycle training run.\n' "$training_cycles"
+        printf '============================================================\n\n'
+        merge_raw_profiles
+    else
+        if [[ $pending_build_is_current == true ]]; then
+            printf '\n[PGO TRAINING BUILD REUSE] %s\n\n' "$pgo_build/bin/zircon-sim"
+        else
+            rm -rf "$pgo_build" "$sim_build"
+            printf '\n============================================================\n'
+            printf ' PGO INSTRUMENTED SIMULATOR BUILD\n'
+            printf '============================================================\n\n'
+            cmake -S "$root" -B "$pgo_build" \
+                "${common_flags[@]}" \
+                -DZIRCON_SIM_PGO_MODE=GENERATE
+            cmake --build "$pgo_build" --target zircon-sim --parallel "$jobs"
+            printf '%s\n' "$fingerprint" >"$pgo_pending_fingerprint"
+        fi
 
-    raw_profiles=()
-    while IFS= read -r -d '' profile; do
-        raw_profiles+=("$profile")
-    done < <(find "$pgo_build" -name '*.profraw' -type f -print0)
-    if [[ ${#raw_profiles[@]} -eq 0 ]]; then
-        echo "PGO training did not produce a raw profile" >&2
-        exit 1
+        mkdir -p "$(dirname "$training_log")"
+        find "$pgo_build" -name '*.profraw' -type f -delete
+        printf '\n============================================================\n'
+        printf ' PGO PROFILE TRAINING START\n'
+        printf ' Running %s Linux cycles for profile collection.\n' "$training_cycles"
+        printf ' This is training, not the interactive Linux session.\n'
+        printf '============================================================\n\n'
+        set +e
+        LLVM_PROFILE_FILE="$pgo_build/zircon-%p.profraw" \
+            "$pgo_build/bin/zircon-sim" \
+            --elf "$payload" \
+            --platform linux \
+            --max-cycles "$training_cycles" \
+            --stall-cycles 5000000 \
+            --allow-timeout \
+            --progress-interval 30 \
+            --no-color 2>&1 | tee "$training_log"
+        training_status=${PIPESTATUS[0]}
+        set -e
+        if [[ $training_status -ne 0 ]]; then
+            echo "PGO training failed with status $training_status" >&2
+            exit "$training_status"
+        fi
+        if ! training_completed; then
+            echo "PGO training exited without reaching $training_cycles cycles" >&2
+            exit 1
+        fi
+        merge_raw_profiles
     fi
-    mkdir -p "$(dirname "$pgo_profile")"
-    "$llvm_profdata" merge -output="$pgo_profile.tmp" "${raw_profiles[@]}"
-    mv "$pgo_profile.tmp" "$pgo_profile"
-    printf '%s\n' "$fingerprint" >"$pgo_fingerprint"
     printf '\n============================================================\n'
     printf ' PGO PROFILE TRAINING COMPLETE\n'
     printf ' Profile: %s\n' "$pgo_profile"

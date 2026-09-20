@@ -14,7 +14,7 @@ LOG ?= $(BUILD)/linux-simulation.log
 PGO_BUILD ?= $(ROOT)/build/linux-pgo-generate
 PGO_PROFILE ?= $(PGO_BUILD)/zircon-linux.profdata
 PGO_FINGERPRINT ?= $(PGO_BUILD)/zircon-linux.fingerprint
-PGO_TRAINING_CYCLES ?= 40000000
+PGO_TRAINING_CYCLES ?= 20000000
 DOCKER ?= docker
 
 ifeq ($(shell uname -s),Darwin)
