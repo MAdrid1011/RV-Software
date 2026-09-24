@@ -20,6 +20,38 @@ if [[ ! -f $payload ]]; then
     exit 1
 fi
 
+find_spike_pkg_config() {
+    local prefix pkgconfig_dir
+
+    if ! command -v pkg-config >/dev/null 2>&1; then
+        echo "pkg-config is required to locate the Spike development library" >&2
+        return 1
+    fi
+    if pkg-config --exists riscv-riscv; then
+        return
+    fi
+
+    for prefix in \
+        "${SPIKE_PREFIX:-}" \
+        "${RISCV:-}" \
+        "${HOME:-}/.local/opt/riscv-isa-sim" \
+        "${HOME:-}/.local"; do
+        [[ -n $prefix ]] || continue
+        pkgconfig_dir="$prefix/lib/pkgconfig"
+        [[ -f $pkgconfig_dir/riscv-riscv.pc ]] || continue
+        export PKG_CONFIG_PATH="$pkgconfig_dir${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+        if pkg-config --exists riscv-riscv; then
+            return
+        fi
+    done
+
+    echo "Spike development metadata riscv-riscv.pc was not found." >&2
+    echo "Set SPIKE_PREFIX to the riscv-isa-sim installation prefix." >&2
+    return 1
+}
+
+find_spike_pkg_config
+
 find_clangxx() {
     local compiler version
     if [[ -n ${CXX:-} ]]; then
