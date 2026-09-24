@@ -40,9 +40,8 @@
 	ret;
 
 #define RVTEST_FAIL			\
-	li	a0, 0xFFFFFFFF;	\
-	.word 0x80000000;				\
-	j fail;
+	li	a0, 1;	\
+	ret;
 
 #define RVTEST_CODE_END
 #define RVTEST_DATA_BEGIN .balign 4;

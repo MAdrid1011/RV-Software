@@ -1,0 +1,90 @@
+/*
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ *
+ * Zircon-2026 RV32IMAF_Zicsr_Zifencei_Zaamo_Zalrsc test configuration.
+ *
+ * Define conventions:
+ *   Extensions:           #define NAME_SUPPORTED and #define NAMEverPver_SUPPORTED
+ *   Boolean params:       #define UDB_NAME           (present when true, absent when false)
+ *   Integer params:       #define UDB_NAME value     and #define UDB_NAME_<value>
+ *   Enum (string) params: #define UDB_NAME_VALUE     (value sanitized to uppercase identifier)
+ *   Boolean arrays:       #define UDB_NAME_<index>   (one per true element)
+ *   Integer arrays:       #define UDB_NAME_<value>   (one per unique element, sorted)
+ *   String arrays:        #define UDB_NAME_<VALUE>   (one per unique element, sanitized)
+ */
+
+#ifndef UDB_CFG_ZIRCON_2026_H
+#define UDB_CFG_ZIRCON_2026_H
+
+/* Implemented extensions */
+#define I_SUPPORTED
+#define I2P1_SUPPORTED
+#define M_SUPPORTED
+#define M2P0_SUPPORTED
+#define F_SUPPORTED
+#define F2P2_SUPPORTED
+#define SM_SUPPORTED
+#define SM1P12P0_SUPPORTED
+#define ZAAMO_SUPPORTED
+#define ZAAMO1P0_SUPPORTED
+#define ZALRSC_SUPPORTED
+#define ZALRSC1P0_SUPPORTED
+#define ZICSR_SUPPORTED
+#define ZICSR2P0_SUPPORTED
+#define ZICNTR_SUPPORTED
+#define ZICNTR2P0_SUPPORTED
+#define ZIFENCEI_SUPPORTED
+#define ZIFENCEI2P0P0_SUPPORTED
+#define ZIHPM_SUPPORTED
+#define ZIHPM2P0_SUPPORTED
+#define ZMMUL_SUPPORTED
+#define ZMMUL1P0P0_SUPPORTED
+
+/* Configuration parameters */
+#define UDB_CONFIG_PTR_ADDRESS 0
+#define UDB_CONFIG_PTR_ADDRESS_0
+#define UDB_COUNTINHIBIT_EN_0
+#define UDB_COUNTINHIBIT_EN_2
+#define UDB_MCOUNTINHIBIT_IMPLEMENTED
+#define UDB_MISALIGNED_LDST_EXCEPTION_PRIORITY_HIGH
+#define UDB_MISA_CSR_IMPLEMENTED
+#define UDB_MTVAL_WIDTH 32
+#define UDB_MTVAL_WIDTH_32
+#define UDB_MTVEC_ACCESS_RW
+#define UDB_MTVEC_BASE_ALIGNMENT_DIRECT 4
+#define UDB_MTVEC_BASE_ALIGNMENT_DIRECT_4
+#define UDB_MTVEC_BASE_ALIGNMENT_VECTORED 4
+#define UDB_MTVEC_BASE_ALIGNMENT_VECTORED_4
+#define UDB_MTVEC_ILLEGAL_WRITE_BEHAVIOR_RETAIN
+#define UDB_MTVEC_MODES_0
+#define UDB_MTVEC_MODES_1
+#define UDB_MXLEN 32
+#define UDB_MXLEN_32
+#define UDB_M_MODE_ENDIANNESS_LITTLE
+#define UDB_NUM_PMP_ENTRIES 0
+#define UDB_NUM_PMP_ENTRIES_0
+#define UDB_PHYS_ADDR_WIDTH 32
+#define UDB_PHYS_ADDR_WIDTH_32
+#define UDB_PMA_GRANULARITY 2
+#define UDB_PMA_GRANULARITY_2
+#define UDB_PRECISE_SYNCHRONOUS_EXCEPTIONS
+#define UDB_REPORT_ENCODING_IN_MTVAL_ON_ILLEGAL_INSTRUCTION
+#define UDB_REPORT_VA_IN_MTVAL_ON_BREAKPOINT
+#define UDB_REPORT_VA_IN_MTVAL_ON_INSTRUCTION_ACCESS_FAULT
+#define UDB_REPORT_VA_IN_MTVAL_ON_INSTRUCTION_MISALIGNED
+#define UDB_REPORT_VA_IN_MTVAL_ON_LOAD_ACCESS_FAULT
+#define UDB_REPORT_VA_IN_MTVAL_ON_LOAD_MISALIGNED
+#define UDB_REPORT_VA_IN_MTVAL_ON_STORE_AMO_ACCESS_FAULT
+#define UDB_REPORT_VA_IN_MTVAL_ON_STORE_AMO_MISALIGNED
+#define UDB_TIME_CSR_IMPLEMENTED
+#define UDB_TRAP_ON_EBREAK
+#define UDB_TRAP_ON_ECALL_FROM_M
+#define UDB_TRAP_ON_RESERVED_INSTRUCTION
+#define UDB_TRAP_ON_UNIMPLEMENTED_CSR
+#define UDB_TRAP_ON_UNIMPLEMENTED_INSTRUCTION
+#define UDB_VENDOR_ID_BANK 0
+#define UDB_VENDOR_ID_BANK_0
+#define UDB_VENDOR_ID_OFFSET 0
+#define UDB_VENDOR_ID_OFFSET_0
+
+#endif /* UDB_CFG_ZIRCON_2026_H */

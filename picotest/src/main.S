@@ -7,6 +7,7 @@
 #define TEST(n) \
 	.global n; \
 	jal n; \
+	bnez a0, test_fail; \
 
 .global main
 main:
@@ -55,13 +56,16 @@ main:
     TEST(sw)
     TEST(xor)
     TEST(xori)
-    # TEST(csrrw)
-    # TEST(csrrs)
-    # TEST(csrrc)
-    # TEST(csrrwi)
-    # TEST(csrrsi)
-    # TEST(csrrci)
+    TEST(csrrw)
+    TEST(csrrs)
+    TEST(csrrc)
+    TEST(csrrwi)
+    TEST(csrrsi)
+    TEST(csrrci)
 
-.global end_loop
-end_loop:
-    .word 0x80000000 # stop simulation
+    li a0, 0
+    ret
+
+.global test_fail
+test_fail:
+    ret

@@ -1,2 +1,7 @@
 build/
 .result
+*.elf
+arch-test/reports/
+linux-system/reports/
+__pycache__/
+*.pyc

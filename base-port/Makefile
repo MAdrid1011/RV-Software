@@ -4,12 +4,21 @@ ifeq ($(MAKECMDGOALS),)
   .DEFAULT_GOAL = image
 endif
 # Compilers
-CC 			= $(CROSS_COMPILE)clang
-CXX 		= $(CROSS_COMPILE)clang++
-AS 			= $(CROSS_COMPILE)clang
-LD 			= $(CROSS_COMPILE)ld.lld
-OBJ_DUMP 	= $(CROSS_COMPILE)llvm-objdump
-OBJ_COPY 	= $(CROSS_COMPILE)llvm-objcopy
+LLVM_CONFIG ?= llvm-config
+LLVM_BIN    ?= $(shell $(LLVM_CONFIG) --bindir 2>/dev/null)
+LLD         ?= $(shell command -v ld.lld 2>/dev/null)
+ifeq ($(LLVM_BIN),)
+  $(error llvm-config was not found; install the LLVM version pinned by Zircon-2026)
+endif
+ifeq ($(LLD),)
+  $(error ld.lld was not found; install the LLD version pinned by Zircon-2026)
+endif
+CC 			= $(LLVM_BIN)/clang
+CXX 		= $(LLVM_BIN)/clang++
+AS 			= $(LLVM_BIN)/clang
+LD 			= $(LLD)
+OBJ_DUMP 	= $(LLVM_BIN)/llvm-objdump
+OBJ_COPY 	= $(LLVM_BIN)/llvm-objcopy
 
 # include 
 WORK_DIR  = $(abspath .)
@@ -18,16 +27,17 @@ INC_PATH += -I$(BASE_PORT)/base/include
 INC_PATH += -I$(BASE_PORT)/tool/include
 
 # FLAGS and LIBS
-CFLAGS    += -Os -Wall -Werror $(INC_PATH) -Wno-main -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector -MMD
+CFLAGS    += -O2 -Wall -Werror $(INC_PATH) -Wno-main -fno-asynchronous-unwind-tables -fno-builtin -fno-stack-protector -MMD
 AFLAGS 	  += -MMD $(INC_PATH) 
 LDFLAGS   += -T $(BASE_PORT)/script/linker.ld --defsym=_pmem_start=0x80000000 --defsym=_entry_offset=0x0 
-LIBS 	  += $(BASE_PORT)/base/build/libbase.a $(BASE_PORT)/tool/build/libtool.a
+CONFIG_TAG = $(RISCV_ARCH)-$(RISCV_ABI)
+LIBS 	  += $(BASE_PORT)/base/build/$(CONFIG_TAG)/libbase.a $(BASE_PORT)/tool/build/$(CONFIG_TAG)/libtool.a
 LINKAGE   = $(OBJS) $(LIBS)
 
 # Build directory and OBJS
 BUILD_DIR = $(abspath ./build)
-IMAGE ?= $(BUILD_DIR)/$(NAMES)-riscv32
-TAR_DIR = $(BUILD_DIR)/riscv32
+IMAGE ?= $(BUILD_DIR)/$(NAMES)-$(CONFIG_TAG)
+TAR_DIR ?= $(BUILD_DIR)/$(CONFIG_TAG)
 OBJS = $(addprefix $(TAR_DIR)/, $(addsuffix .o, $(basename $(SRCS))))
 
 # Colors

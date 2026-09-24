@@ -100,11 +100,6 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 #if (MEM_METHOD==MEM_STACK)
 	ee_u8 stack_memblock[TOTAL_DATA_SIZE*MULTITHREAD];
 #endif
-
-  ioe_init();
-
-  ee_printf("Running CoreMark for %d iterations\n", ITERATIONS);
-
 	/* first call any initializations needed */
 	portable_init(&(results[0].port), &argc, argv);
 	/* First some checks to make sure benchmark will run ok */
@@ -205,9 +200,9 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 		results[0].iterations=1;
 		while (secs_passed < (secs_ret)1) {
 			results[0].iterations*=10;
-			// start_time();
+			start_time();
 			iterate(&results[0]);
-			// stop_time();
+			stop_time();
 			secs_passed=time_in_secs(get_time());
 		}
 		/* now we know it executes for at least 1 sec, set actual run time at about 10 secs */
@@ -217,7 +212,7 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 		results[0].iterations*=1+10/divisor;
 	}
 	/* perform actual benchmark */
-	// start_time();
+	start_time();
 #if (MULTITHREAD>1)
 	if (default_num_contexts>MULTITHREAD) {
 		default_num_contexts=MULTITHREAD;
@@ -233,7 +228,7 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 #else
 	iterate(&results[0]);
 #endif
-	// stop_time();
+	stop_time();
 	total_time=get_time();
 	/* get a function of the input to report */
 	seedcrc=crc16(results[0].seed1,seedcrc);
@@ -289,19 +284,40 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 	}
 	total_errors+=check_data_types();
 	/* and report results */
-	ee_printf("CoreMark Size    : %d\n",(int)results[0].size);
+	ee_printf("CoreMark Size    : %lu\n",(ee_u32)results[0].size);
+	#if COREMARK_CYCLE_TIMER
+	{
+		ee_u32 score_milli = coremark_score_milli(
+			total_time,
+			default_num_contexts * results[0].iterations
+		);
+		ee_printf("Timed cycles     : %lu\n",(ee_u32)total_time);
+		ee_printf("CoreMark/MHz     : %lu.%03lu\n",score_milli / 1000,score_milli % 1000);
+	}
+	#else
+	ee_printf("Total ticks      : %lu\n",(ee_u32)total_time);
 #if HAS_FLOAT
-	ee_printf("Total time (ms)  : %f\n",time_in_secs(total_time));
+	ee_printf("Total time (secs): %f\n",time_in_secs(total_time));
 	if (time_in_secs(total_time) > 0)
-		ee_printf("Iterations/mSec  : %f\n",default_num_contexts*results[0].iterations/time_in_secs(total_time));
+		ee_printf("Iterations/Sec   : %f\n",default_num_contexts*results[0].iterations/time_in_secs(total_time));
 #else
-	ee_printf("Total time (ms)  : %d\n",time_in_secs(total_time));
+	ee_printf("Total time (secs): %d\n",time_in_secs(total_time));
+	if (time_in_secs(total_time) > 0)
+		ee_printf("Iterations/Sec   : %d\n",default_num_contexts*results[0].iterations/time_in_secs(total_time));
 #endif
-	ee_printf("Iterations       : %d\n",(int)default_num_contexts*results[0].iterations);
+	if (time_in_secs(total_time) < 10) {
+		ee_printf("ERROR! Must execute for at least 10 secs for a valid result!\n");
+		total_errors++;
+	}
+	#endif
+
+	ee_printf("Iterations       : %lu\n",(ee_u32)default_num_contexts*results[0].iterations);
 	ee_printf("Compiler version : %s\n",COMPILER_VERSION);
+	ee_printf("Compiler flags   : %s\n",COMPILER_FLAGS);
 #if (MULTITHREAD>1)
 	ee_printf("Parallel %s : %d\n",PARALLEL_METHOD,default_num_contexts);
 #endif
+	ee_printf("Memory location  : %s\n",MEM_LOCATION);
 	/* output for verification */
 	ee_printf("seedcrc          : 0x%04x\n",seedcrc);
 	if (results[0].execs & ID_LIST)
@@ -315,12 +331,24 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 			ee_printf("[%d]crcstate      : 0x%04x\n",i,results[i].crcstate);
 	for (i=0 ; i<default_num_contexts; i++)
 		ee_printf("[%d]crcfinal      : 0x%04x\n",i,results[i].crc);
-  ee_printf("Finised in %d ms.\n", (int)total_time);
 	if (total_errors==0) {
-    ee_printf("==================================================\n");
-	  ee_printf("CoreMark PASS       %d Marks\n", 2921400 / time_in_secs(total_time) * ITERATIONS / 1000);
-	  ee_printf("                vs. 100000 Marks (i7-7700K @ 4.20GHz)\n");
-  }
+		ee_printf("Correct operation validated. See readme.txt for run and reporting rules.\n");
+#if HAS_FLOAT
+		if (known_id==3) {
+			ee_printf("CoreMark 1.0 : %f / %s %s",default_num_contexts*results[0].iterations/time_in_secs(total_time),COMPILER_VERSION,COMPILER_FLAGS);
+#if defined(MEM_LOCATION) && !defined(MEM_LOCATION_UNSPEC)
+			ee_printf(" / %s",MEM_LOCATION);
+#else
+			ee_printf(" / %s",mem_name[MEM_METHOD]);
+#endif
+
+#if (MULTITHREAD>1)
+			ee_printf(" / %d:%s",default_num_contexts,PARALLEL_METHOD);
+#endif
+			ee_printf("\n");
+		}
+#endif
+	}
 	if (total_errors>0)
 		ee_printf("Errors detected\n");
 	if (total_errors<0)
@@ -335,5 +363,4 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 
 	return MAIN_RETURN_VAL;
 }
-
 

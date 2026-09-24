@@ -1,0 +1,4 @@
+config BR2_PACKAGE_ZIRCON_VALIDATION
+	bool "zircon-validation"
+	help
+	  Deterministic userspace checks for the Zircon RV32IMAF Linux port.

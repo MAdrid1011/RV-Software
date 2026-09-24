@@ -1,0 +1,99 @@
+From 0b86d60badad6a69b37fc06d18b5763fbbf47b58 Mon Sep 17 00:00:00 2001
+From: Alex Ronne Petersen <alex@alexrp.com>
+Date: Sat, 29 Jun 2024 04:04:34 +0200
+Subject: [PATCH] riscv: fix setjmp assembly when compiling for ilp32f
+
+Backport the upstream musl fix needed by the Zircon ilp32f userspace.
+The psABI only requires preserving the register width used by the ABI,
+so an F-only target must use flw/fsw rather than D-extension fld/fsd.
+
+Upstream-Commit: 0b86d60badad6a69b37fc06d18b5763fbbf47b58
+---
+ src/setjmp/riscv32/longjmp.S | 30 ++++++++++++++++++------------
+ src/setjmp/riscv32/setjmp.S  | 30 ++++++++++++++++++------------
+ 2 files changed, 36 insertions(+), 24 deletions(-)
+
+diff --git a/src/setjmp/riscv32/longjmp.S b/src/setjmp/riscv32/longjmp.S
+index f9cb3318..b4e5458d 100644
+--- a/src/setjmp/riscv32/longjmp.S
++++ b/src/setjmp/riscv32/longjmp.S
+@@ -23,18 +23,24 @@ longjmp:
+ 	lw ra,    52(a0)
+ 
+ #ifndef __riscv_float_abi_soft
+-	fld fs0,  56(a0)
+-	fld fs1,  64(a0)
+-	fld fs2,  72(a0)
+-	fld fs3,  80(a0)
+-	fld fs4,  88(a0)
+-	fld fs5,  96(a0)
+-	fld fs6,  104(a0)
+-	fld fs7,  112(a0)
+-	fld fs8,  120(a0)
+-	fld fs9,  128(a0)
+-	fld fs10, 136(a0)
+-	fld fs11, 144(a0)
++#ifdef __riscv_float_abi_double
++#define FLX fld
++#else
++#define FLX flw
++#endif
++
++	FLX fs0,  56(a0)
++	FLX fs1,  64(a0)
++	FLX fs2,  72(a0)
++	FLX fs3,  80(a0)
++	FLX fs4,  88(a0)
++	FLX fs5,  96(a0)
++	FLX fs6,  104(a0)
++	FLX fs7,  112(a0)
++	FLX fs8,  120(a0)
++	FLX fs9,  128(a0)
++	FLX fs10, 136(a0)
++	FLX fs11, 144(a0)
+ #endif
+ 
+ 	seqz a0, a1
+diff --git a/src/setjmp/riscv32/setjmp.S b/src/setjmp/riscv32/setjmp.S
+index 8a75cf55..5a1a41ef 100644
+--- a/src/setjmp/riscv32/setjmp.S
++++ b/src/setjmp/riscv32/setjmp.S
+@@ -23,18 +23,24 @@ setjmp:
+ 	sw ra,    52(a0)
+ 
+ #ifndef __riscv_float_abi_soft
+-	fsd fs0,  56(a0)
+-	fsd fs1,  64(a0)
+-	fsd fs2,  72(a0)
+-	fsd fs3,  80(a0)
+-	fsd fs4,  88(a0)
+-	fsd fs5,  96(a0)
+-	fsd fs6,  104(a0)
+-	fsd fs7,  112(a0)
+-	fsd fs8,  120(a0)
+-	fsd fs9,  128(a0)
+-	fsd fs10, 136(a0)
+-	fsd fs11, 144(a0)
++#ifdef __riscv_float_abi_double
++#define FSX fsd
++#else
++#define FSX fsw
++#endif
++
++	FSX fs0,  56(a0)
++	FSX fs1,  64(a0)
++	FSX fs2,  72(a0)
++	FSX fs3,  80(a0)
++	FSX fs4,  88(a0)
++	FSX fs5,  96(a0)
++	FSX fs6,  104(a0)
++	FSX fs7,  112(a0)
++	FSX fs8,  120(a0)
++	FSX fs9,  128(a0)
++	FSX fs10, 136(a0)
++	FSX fs11, 144(a0)
+ #endif
+ 
+ 	li a0, 0
+-- 
+2.39.5

@@ -1,0 +1,4 @@
+[submodule "linux"]
+	path = linux
+	url = https://github.com/MAdrid1011/linux.git
+	branch = zircon-rv32-f-only-6.1.y
