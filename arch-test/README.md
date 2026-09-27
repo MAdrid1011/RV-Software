@@ -15,14 +15,16 @@ Docker 或额外的 Git 子模块。
 PC、机器码和整数/浮点目的寄存器，不生成或嵌入参考签名。测试结束时通过位于
 `0xaffff000` 的非缓存 `tohost` 退出，不占用设备地址空间的起始位置。
 
-需要 Homebrew LLVM、Spike 和已构建的 ZirconSim。常用命令如下：
+需要支持 RV32 目标的 Clang、LLVM objdump、Spike 和已构建的 ZirconSim。macOS 默认查找
+Homebrew LLVM；Linux 优先使用 Clang/LLVM 23，也可通过 `CLANG` 与 `OBJDUMP` 指定工具路径。
+在 Zircon-2026 仓库根目录运行：
 
 ```sh
-make -C arch-test build
-make -C arch-test run-one TEST=Zaamo-amoadd.w-00
-make -C arch-test run
-make -C arch-test clean
+make -C RV-Software/arch-test build
+make -C RV-Software/arch-test run-one TEST=Zaamo-amoadd.w-00
+make -C RV-Software/arch-test run
+make -C RV-Software/arch-test clean
 ```
 
-`build` 默认使用主机全部逻辑处理器。生成文件位于 `arch-test/build/`，不会进入
+`build` 默认使用主机全部逻辑处理器。生成文件位于 `RV-Software/arch-test/build/`，不会进入
 版本控制。测试源码来自官方 RISC-V Architecture Test，许可证见 `LICENSES/`。
