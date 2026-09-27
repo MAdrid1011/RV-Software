@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+unset LD_LIBRARY_PATH
+
 system_dir=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 software_dir=$(CDPATH= cd -- "$system_dir/.." && pwd)
 build_dir="$system_dir/build"

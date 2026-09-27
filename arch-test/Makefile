@@ -6,8 +6,9 @@ BUILD_DIR := $(ARCH_TEST_DIR)/build
 ELF_DIR := $(BUILD_DIR)/elf
 TEST_DIR := $(ARCH_TEST_DIR)/tests
 SIM ?= $(ZIRCON_ROOT)/build/cmake/bin/zircon-sim
-CLANG ?= $(shell brew --prefix llvm 2>/dev/null)/bin/clang
-OBJDUMP ?= $(shell brew --prefix llvm 2>/dev/null)/bin/llvm-objdump
+LLVM_PREFIX := $(shell if [ "$$(uname -s)" = Darwin ] && command -v brew >/dev/null 2>&1; then brew --prefix llvm 2>/dev/null; fi)
+CLANG ?= $(if $(LLVM_PREFIX),$(LLVM_PREFIX)/bin/clang,$(shell command -v clang-23 2>/dev/null || command -v clang 2>/dev/null))
+OBJDUMP ?= $(if $(LLVM_PREFIX),$(LLVM_PREFIX)/bin/llvm-objdump,$(shell command -v llvm-objdump-23 2>/dev/null || command -v llvm-objdump 2>/dev/null))
 JOBS ?= $(shell sysctl -n hw.logicalcpu 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
 
 ISA := rv32imaf_zicsr_zifencei_zaamo_zalrsc_zicntr_zihpm
