@@ -1,25 +1,24 @@
 # RV-Software
 
-The `zircon-2026` branch builds bare-metal software for
-`RV32IMAF_Zicsr_Zifencei_Zaamo_Zalrsc` with the `ilp32f` ABI. The architecture and ABI can
-be overridden for the Zircon-2024 comparison point:
+本仓库提供 Zircon-2026 使用的裸机程序、CoreMark、RISC-V 架构测试和 Linux 软件镜像。
+默认 `zircon-2026` 分支面向 `RV32IMAF_Zicsr_Zifencei_Zaamo_Zalrsc` 与 `ilp32f` ABI。
+比较早期 Zircon-2024 配置时，可指定：
 
 ```sh
 make RISCV_ARCH=rv32im RISCV_ABI=ilp32
 ```
 
-Programs terminate through the ELF `tohost` symbol. A value of `1` is pass;
-another odd value is a failure code. Illegal instruction sentinels are not a
-test protocol because they collide with architectural exception testing.
+裸机程序通过 ELF 中的 `tohost` 符号报告结果：`1` 表示通过，其他奇数值表示错误码。
+异常测试不会把非法指令当作程序结束标记。
 
-`functest/` contains focused bare-metal programs, `coremark/` contains the
-cycle-normalized CoreMark port, and `arch-test/` contains the vendored subset
-of the official RISC-V Architecture Test suite. The architecture tests build
-with Clang and run through ZirconSim with in-process Spike differential testing.
+| 目录 | 内容 |
+| --- | --- |
+| `functest/` | 指令和子系统的定向裸机测试 |
+| [`coremark/`](coremark/ZIRCON.md) | CoreMark 裸机移植与周期归一化测量 |
+| [`arch-test/`](arch-test/README.md) | RISC-V 架构测试子集与 Spike 差分 |
+| `linux-system/` | Buildroot、Linux、OpenSBI、设备树与 initramfs 镜像 |
 
-`linux-system/` defines the fixed Buildroot, Linux, OpenSBI, initramfs, and
-device-tree image used by Zircon-2026. The supported build and interactive boot
-entry point is run from the parent Zircon-2026 repository:
+从 Zircon-2026 主仓库启动 Linux：
 
 ```sh
 make -C RV-Software/linux-system linux
