@@ -1,15 +1,12 @@
-# Zircon CoreMark Port
+# Zircon CoreMark 移植
 
-This directory keeps the CoreMark v1.01 benchmark sources and the Zircon bare-metal
-port. The default build uses one iteration for fast functional and Difftest runs:
+本目录包含 CoreMark v1.01 源码和 Zircon 裸机平台移植。默认构建运行一轮，适合功能验证：
 
 ```sh
 make -C RV-Software/coremark
 ```
 
-Use a separate iteration count for a cycle-normalized measurement. Each count has an
-independent object directory and ELF name, so switching between functional and
-measurement builds does not reuse incompatible objects:
+周期归一化测量可指定轮数；不同轮数使用独立目标文件目录和 ELF：
 
 ```sh
 make -C RV-Software/coremark ITERATIONS=10
@@ -18,13 +15,11 @@ build/cmake/bin/zircon-sim \
     --seed 1 --max-cycles 10000000 --stall-cycles 10000 --no-progress
 ```
 
-The timed region reads `mcycle` immediately before and after `iterate()`. The port
-reports the frequency-independent score as:
+移植层在 `iterate()` 前后读取 `mcycle`，按下式计算与时钟频率无关的分数：
 
 ```text
-CoreMark/MHz = iterations * 1,000,000 / timed_cycles
+CoreMark/MHz = 轮数 × 1,000,000 / 计时周期
 ```
 
-This cycle-normalized result does not assume a Vivado or ASIC clock frequency. An EEMBC
-submission also requires a run of at least ten seconds on the implemented target; that
-duration can only be checked after choosing the target implementation and its clock.
+此结果不预设 FPGA 或 ASIC 的工作频率。EEMBC 正式提交还需要目标实现上的运行时间
+达到至少十秒。
