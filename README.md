@@ -14,6 +14,8 @@ make RISCV_ARCH=rv32im RISCV_ABI=ilp32
 | 目录 | 内容 |
 | --- | --- |
 | `functest/` | 指令和子系统的定向裸机测试 |
+| `device-test/` | 外设接口与设备功能测试 |
+| [`taclebench/`](taclebench/README.md) | TACLeBench 嵌入式与控制类工作负载 |
 | [`coremark/`](coremark/ZIRCON.md) | CoreMark 裸机移植与周期归一化测量 |
 | [`arch-test/`](arch-test/README.md) | RISC-V 架构测试子集与 Spike 差分 |
 | `linux-system/` | Buildroot、Linux、OpenSBI、设备树与 initramfs 镜像 |
@@ -23,3 +25,14 @@ make RISCV_ARCH=rv32im RISCV_ABI=ilp32
 ```sh
 make -C RV-Software/linux-system linux
 ```
+
+## TACLeBench
+
+TACLeBench 移植提供 54 个单核嵌入式基准的统一构建入口，并保留完整上游基准树。`lift` 扩展将工业升降机控制状态组成设备描述符，用于对比顺序外设写入和可合并写入。
+
+```sh
+make -C RV-Software/taclebench suite
+make -C RV-Software/taclebench sim-write-combine
+```
+
+完整基准列表、运行方法、来源和许可证说明见 [`taclebench/README.md`](taclebench/README.md)。
