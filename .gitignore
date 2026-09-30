@@ -3,5 +3,6 @@ build/
 *.elf
 arch-test/reports/
 linux-system/reports/
+taclebench/reports/
 __pycache__/
 *.pyc
