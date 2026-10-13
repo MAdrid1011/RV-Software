@@ -51,6 +51,19 @@ build/performance/bin/zircon-sim --elf \
 覆盖连续、stride、indexed、segment、whole-register 与 mask 访存。生成程序保留测试名称，
 运行时默认逐退休差分，并显示周期、IPC 和仿真速度。
 
+算术和访存生成器同时输出同名 CSV 覆盖表，每行对应实际执行的指令编码、
+SEW、LMUL、VL 和 mask；访存表另外列出 EEW 与 segment 字段数。
+覆盖表与 C 程序由同一组用例产生，位于本目录的构建输出中。
+
+| 验证入口 | 覆盖内容 | 用例数 |
+| --- | --- | ---: |
+| `isa-groups` | 整数、定点、mask、归约、排列及 FP32 编码与合法寄存器组 | 5709 |
+| `isa-memory` | 连续、stride、indexed、segment、mask、whole-register、fault-only-first | 450 |
+| `state-smoke` | 配置、VL 边界、策略、非零 vstart、重叠、CSR 别名与恢复 | 960 |
+
+浮点特殊值、舍入、异常标志与连续八路 FMA 吞吐由 RTL 单元测试和 `serial-smoke`
+共同验证；反压、取消与晚响应由计算、访存和 Cache 的 RTL 单元测试验证。
+
 `scalar-wakeup-smoke` 在连续标量 Load 和分支之间交错执行 `vmv.x.s`、`vcpop.m`，
 校验向量标量结果共用写回端口时的依赖与恢复。
 

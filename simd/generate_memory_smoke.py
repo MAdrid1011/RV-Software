@@ -1,5 +1,6 @@
 """Generate all Zve32f vector-memory encodings and legal segment widths."""
 import argparse
+import csv
 from pathlib import Path
 import re
 
@@ -18,6 +19,7 @@ def main():
               'int main(void) {',
               '    for (unsigned i = 0; i < 256; ++i) source[i] = i * 0x013579bdu ^ 0x80000003u;']
     count = 0
+    coverage = []
     encodings = set()
     for raw_name, raw_match, raw_mask in sorted(rows):
         name, match, mask = raw_name.lower(), int(raw_match, 16), int(raw_mask, 16)
@@ -37,6 +39,8 @@ def main():
                 bits |= 0 if masked else 1 << 25
                 instruction = match | (bits & ~mask)
                 width = 32 if mask_access else eew
+                coverage.append((name, f"0x{instruction:08x}", width, eew, "m1", 7,
+                                 fields, int(masked)))
                 if mop & 1:
                     output += [f'    for (unsigned i = 0; i < 8; ++i) indices[i] = (i / 2) * {fields * width // 8};']
                 output += [f'    simd_puts("{name} nf{fields} {"masked" if masked else "unmasked"}\\n");',
@@ -52,6 +56,10 @@ def main():
                 count += 1
     output += [f'    simd_puts("Zve32f memory cases: {count}\\n");', '    return 0;', '}']
     args.output.write_text("\n".join(output) + "\n")
+    with args.output.with_suffix(".csv").open("w", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(("instruction", "encoding", "sew", "eew", "lmul", "vl", "fields", "masked"))
+        writer.writerows(coverage)
     print(f"Generated {count} cases from {len(encodings)} Zve32f memory encodings")
 
 

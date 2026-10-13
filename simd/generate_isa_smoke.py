@@ -1,5 +1,6 @@
 """Generate Zve32f arithmetic encoding cases from Spike's public encoding table."""
 import argparse
+import csv
 from pathlib import Path
 import re
 
@@ -45,6 +46,7 @@ def main():
               'int main(void) {', '    for (unsigned i = 0; i < 64; ++i)',
               '        input[i] = (i * 0x013579bdu) ^ (i & 1 ? 0x80000000u : 0x3f800000u);']
     count = 0
+    coverage = []
     for name, match, mask in instructions:
         root = name.split("_")[0]
         floating = ((match >> 12) & 7) in (1, 5)
@@ -73,6 +75,7 @@ def main():
                     continue
                 fields = (16 << 7) | (24 << 15) | (8 << 20) | (0 if masked else 1 << 25)
                 instruction = match | (fields & ~mask)
+                coverage.append((name, f"0x{instruction:08x}", sew, group, vl, int(masked)))
                 output += [f'    simd_puts("{name} e{sew} {group} {"masked" if masked else "unmasked"}\\n");',
                     '    __asm__ volatile(',
                     '        "vl8re32.v v8, (%0)\\n\\t" "vl8re32.v v16, (%0)\\n\\t"',
@@ -87,6 +90,10 @@ def main():
                 count += 1
     output += [f'    simd_puts("Zve32f arithmetic cases: {count}\\n");', '    return 0;', '}']
     args.output.write_text("\n".join(output) + "\n")
+    with args.output.with_suffix(".csv").open("w", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow(("instruction", "encoding", "sew", "lmul", "vl", "masked"))
+        writer.writerows(coverage)
     print(f"Generated {count} cases from {len(instructions)} Zve32f arithmetic encodings")
 
 
