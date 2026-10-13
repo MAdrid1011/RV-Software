@@ -15,7 +15,7 @@ LDFLAGS := $(TARGET_FLAGS) -fuse-ld=lld -nostdlib -Wl,-T,linker.ld -Wl,--gc-sect
 VARIANTS := scalar auto rvv
 ELFS := $(addprefix $(OUT)/,$(addsuffix /simd.elf,$(VARIANTS)))
 
-.PHONY: all audit run coremark smoke memory-smoke serial-smoke scalar-wakeup-smoke state-smoke isa-smoke isa-groups isa-memory sgemm stream register-throughput
+.PHONY: all audit run coremark print-coremark-elf smoke memory-smoke serial-smoke scalar-wakeup-smoke state-smoke isa-smoke isa-groups isa-memory sgemm stream register-throughput
 all: $(ELFS) audit
 $(OUT)/twiddle.c: gen_twiddle.py
 	@mkdir -p $(@D)
@@ -51,6 +51,8 @@ run: all
 	@for variant in $(VARIANTS); do $(SIMULATOR) --elf $(OUT)/$$variant/simd.elf --max-cycles 1000000000 > $(OUT)/$$variant/run.txt || exit $$?; done
 	python3 report.py $(OUT)
 coremark: $(OUT)/coremark.elf
+print-coremark-elf:
+	@printf '%s\n' '$(abspath $(OUT)/coremark.elf)'
 smoke: $(OUT)/arithmetic-smoke.elf
 memory-smoke: $(OUT)/memory-smoke.elf
 serial-smoke: $(OUT)/serial-smoke.elf
