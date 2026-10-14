@@ -77,3 +77,45 @@ make -C RV-Software/simd sgemm stream register-throughput
 校验结果。`stream` 比较数组加法与 SAXPY 在 Cache 内及大数组上的表现；
 `register-throughput` 使用十六组独立目的寄存器，测量 INT32 加法及 FP32 加法、乘法和
 FMA 的流水吞吐。各程序的 ELF 同样位于配置与工具链隔离的输出目录。
+
+## FP32 矩阵乘 FMA 利用率
+
+`fma-gemm` 计算行优先矩阵 `A[32][256] × B[256][32]`，标量参考使用 `fmadd.s`，
+向量版本使用 `vfmacc.vv/vf`。每个输出按递增的 K 顺序累加，保留融合运算的一次舍入语义，
+输出逐元素比较位模式。程序包含简单循环、4×32 寄存器分块、固定配置微内核及 K=32
+Cache 分块，以及交替 B 寄存器组、六行与七行分块的固定配置微内核，每项预热一次、计时五次。
+
+```sh
+make -C RV-Software/simd fma-gemm
+build/performance/bin/zircon-sim --elf \
+  RV-Software/simd/build/performance-vlen256-axi256-clang23.1.2/fma-k32-all/fma-gemm.elf \
+  --max-cycles 100000000 --instruction-profile build/fma-gemm-retirement.csv \
+  > build/fma-gemm.log
+python3 RV-Software/simd/fma_gemm_report.py \
+  --elf RV-Software/simd/build/performance-vlen256-axi256-clang23.1.2/fma-k32-all/fma-gemm.elf \
+  --profile build/fma-gemm-retirement.csv --log build/fma-gemm.log
+```
+
+八路有效利用率为 `有效 FP32 FMA 元素数 / (8 × 周期数)`。VL=8 时，一条向量 FMA
+处理八个元素；LMUL=4、VL=32 时，一条指令处理 32 个元素，分四个八路任务执行。
+报告脚本按 ELF 函数范围统计实际退休的 FMA 指令，核对六次执行的数量，再计算利用率。
+每次矩阵乘完成 262144 次有效元素 FMA，理想八路计算需要 32768 周期。
+
+`body_cycles` 汇总 K 循环的周期，包含输入 Load、地址计算和循环控制；
+`total_cycles` 包含累加器准备、中间结果与最终输出 Store、外层循环和计时。
+Cache 分块的中间结果 Load/Store 计入完整内核周期，两种利用率分别报告。
+固定配置微内核使用 VLEN=256 的寄存器布局，七行版本在尾部处理剩余四行。
+交替 B 组用于提前供数，行分块提高每次输入 Load 的复用次数；所有内核保留相同的
+递增 K 融合累加顺序，不进行矩阵打包。
+
+`FMA_K_TILE` 调整七行内核的 K 分块，取值为 256 的偶数因子；默认 32。
+`FMA_KERNEL_SET=seven-row` 仅测量七行内核，便于比较分块参数。
+输出目录包含分块大小和内核集合，避免不同参数混用 ELF 与退休统计：
+
+```sh
+make -C RV-Software/simd fma-gemm FMA_K_TILE=16 FMA_KERNEL_SET=seven-row
+```
+
+对应输出为 `build/performance-vlen256-axi256-clang<版本>/fma-k16-seven-row/fma-gemm.elf`。
+减小 K 分块有助于提高输入驻留率，也会增加中间累加结果的读写次数，因此同时比较
+K 循环与完整内核的周期。

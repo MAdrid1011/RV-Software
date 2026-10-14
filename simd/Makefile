@@ -14,8 +14,11 @@ SCALAR_CC := python3 compile_scalar.py $(CLANG)
 LDFLAGS := $(TARGET_FLAGS) -fuse-ld=lld -nostdlib -Wl,-T,linker.ld -Wl,--gc-sections
 VARIANTS := scalar auto rvv
 ELFS := $(addprefix $(OUT)/,$(addsuffix /simd.elf,$(VARIANTS)))
+FMA_K_TILE ?= 32
+FMA_KERNEL_SET ?= all
+FMA_OUT := $(OUT)/fma-k$(FMA_K_TILE)-$(FMA_KERNEL_SET)
 
-.PHONY: all audit run coremark print-coremark-elf smoke memory-smoke serial-smoke scalar-wakeup-smoke state-smoke isa-smoke isa-groups isa-memory sgemm stream register-throughput
+.PHONY: all audit run coremark print-coremark-elf smoke memory-smoke serial-smoke scalar-wakeup-smoke state-smoke isa-smoke isa-groups isa-memory sgemm stream register-throughput fma-gemm
 all: $(ELFS) audit
 $(OUT)/twiddle.c: gen_twiddle.py
 	@mkdir -p $(@D)
@@ -96,6 +99,13 @@ $(OUT)/isa-smoke.elf: $(OUT)/isa-smoke.o $(OUT)/runtime.o $(OUT)/start.o linker.
 sgemm: $(OUT)/sgemm.elf
 stream: $(OUT)/scalar/stream.elf $(OUT)/rvv/stream.elf
 register-throughput: $(OUT)/register-throughput.elf
+fma-gemm: $(FMA_OUT)/fma-gemm.elf
+$(FMA_OUT)/fma-gemm.o: fma_gemm.c runtime.h
+	@mkdir -p $(@D)
+	@test '$(FMA_KERNEL_SET)' = all || test '$(FMA_KERNEL_SET)' = seven-row
+	$(CLANG) $(CFLAGS) -DFMA_K_TILE=$(FMA_K_TILE) $(if $(filter seven-row,$(FMA_KERNEL_SET)),-DFMA_GEMM_FOCUS) -c $< -o $@
+$(FMA_OUT)/fma-gemm.elf: $(FMA_OUT)/fma-gemm.o $(OUT)/runtime.o $(OUT)/start.o linker.ld
+	$(CLANG) $(LDFLAGS) $(filter %.o,$^) -o $@
 $(OUT)/stream-bench.o: stream_bench.c runtime.h compile_scalar.py
 	@mkdir -p $(@D)
 	$(SCALAR_CC) $(CFLAGS) $(SCALAR_FLAGS) -c $< -o $@
