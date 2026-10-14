@@ -30,7 +30,7 @@
 	*/
 static CORE_TICKS read_cycle(void) {
     CORE_TICKS cycles;
-    __asm__ volatile("csrr %0, mcycle" : "=r"(cycles));
+    __asm__ volatile("csrr %0, cycle" : "=r"(cycles) :: "memory");
     return cycles;
 }
 
