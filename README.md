@@ -17,6 +17,8 @@ make RISCV_ARCH=rv32im RISCV_ABI=ilp32
 | `device-test/` | 外设接口与设备功能测试 |
 | [`taclebench/`](taclebench/README.md) | TACLeBench 嵌入式与控制类工作负载 |
 | [`coremark/`](coremark/ZIRCON.md) | CoreMark 裸机移植与周期归一化测量 |
+| [`simd/`](simd/README.md) | SIMD8 性能核心的裸机计算程序、运行时与向量测试 |
+| [`coremark-pro/`](coremark-pro/README.md) | 官方单精度线性代数与 Livermore kernels 裸机移植 |
 | [`arch-test/`](arch-test/README.md) | RISC-V 架构测试子集与 Spike 差分 |
 | `linux-system/` | Buildroot、Linux、OpenSBI、设备树与 initramfs 镜像 |
 

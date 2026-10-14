@@ -16,7 +16,7 @@
 #undef al_ticks_per_sec
 #undef al_tick_granularity
 #undef al_main
-#include "../simd/runtime.h"
+#include "../simd/runtime/runtime.h"
 
 static uint64_t started;
 void al_signal_start(void) { started = simd_cycle64(); }

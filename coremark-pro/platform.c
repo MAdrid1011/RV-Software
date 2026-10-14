@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
-#include "../simd/runtime.h"
+#include "../simd/runtime/runtime.h"
 
 extern char __heap_start[], __heap_end[];
 static char *heap_next;
